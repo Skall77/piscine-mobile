@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:math_expressions/math_expressions.dart';
 
-class HomePage extends StatelessWidget{
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>{
+  String userInput = '0';
+  String result = '0';
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +22,9 @@ class HomePage extends StatelessWidget{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const TextField(),
+            buildScrollableText(userInput),
             const SizedBox(height: 8.0),
-            const TextField(),
+            buildScrollableText(result),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -59,7 +68,7 @@ class HomePage extends StatelessWidget{
                       buildButton("0", Colors.black),
                       buildButton(".", Colors.black),
                       buildButton("00", Colors.black),
-                      buildButton("=", Colors.white),
+                      buildButton("=", Colors.green),
                     ],
                   ),
                 ],
@@ -84,39 +93,80 @@ class HomePage extends StatelessWidget{
     );
   }
 
-}
-
-Widget buildButton(String buttonText, Color textColor) {
-  return TextButton(
-    style: ButtonStyle(
-      foregroundColor: MaterialStateProperty.all<Color>(textColor),
-      backgroundColor: MaterialStateProperty.all<Color>(const Color.fromARGB(255, 96, 125, 139)),
-    ),
-    onPressed: () {
-      print("Button pressed: $buttonText");
-    },
-    child: Text(buttonText),
-  );
-}
-
-class TextField extends StatelessWidget {
-  const TextField({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
+  Widget buildScrollableText(String text) {
+    return Row (
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text(
-          '0',
-          style: TextStyle(
-            fontSize: 30.0,
-            color: Colors.blueGrey,
+        Flexible(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 30.0,
+                color: Colors.blueGrey,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+
+  Widget buildButton(String buttonText, Color textColor) {
+  return TextButton(
+    style: ButtonStyle(
+      foregroundColor: MaterialStateProperty.all<Color>(textColor),
+      backgroundColor: MaterialStateProperty.all<Color>(const Color.fromARGB(255, 96, 125, 139)),
+      shape: MaterialStateProperty.all<BeveledRectangleBorder>(
+        BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(18.0),
+          side: const BorderSide(color: Colors.white),
+        ),
+      ),
+    ),
+    onPressed: () {
+      setState(() {
+        handleButtonPressed(buttonText);
+      });
+    },
+    child: Text(buttonText),
+  );
+  }
+
+  void handleButtonPressed(String buttonText) {
+    if (buttonText == "AC") {
+      userInput = "0";
+      result = "0";
+    } else if (buttonText == "C") {
+      if (userInput.isNotEmpty) {
+        userInput = userInput.substring(0, userInput.length - 1);
+        if (userInput == "") {
+          userInput = "0";
+        }
+      }
+    } else if (buttonText == "=") {
+      result = calculateResult();
+      if (result.endsWith(".0")) {
+        result = result.substring(0, result.length - 2);
+      }
+    } else {
+      if (userInput == "0") {
+        userInput = buttonText;
+      } else {
+        userInput += buttonText;
+      }
+    }
+  }
+
+  String calculateResult() {
+    try {
+      Expression expression = Parser().parse(userInput);
+      double evaluation = expression.evaluate(EvaluationType.REAL, ContextModel());
+      return evaluation.toString();
+    } catch (e) {
+      return "Error";
+    }
+  }
+
 }
